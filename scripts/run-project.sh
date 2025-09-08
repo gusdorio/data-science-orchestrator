@@ -82,6 +82,7 @@ Options:
     -p, --port      Additional port to expose (can be used multiple times)
     -e, --env       Environment variable (can be used multiple times)
     -n, --name      Container name (default: project directory name)
+    --standard  Skip project docker-compose.yml, use direct docker run
     -h, --help      Show this help message
 
 Examples:
@@ -102,6 +103,9 @@ Examples:
 
     # Expose additional ports
     $0 my-project --port 5000:5000 --port 8080:8080
+    
+    # Use standardized configuration, ignore project compose
+    $0 supervised-learning/RBNNalgorithm --jupyter --standard
 EOF
 }
 
@@ -112,6 +116,7 @@ COMMAND="bash"
 EXTRA_PORTS=""
 EXTRA_ENV=""
 CONTAINER_NAME=""
+FORCE_PATTERNS=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -150,6 +155,10 @@ while [[ $# -gt 0 ]]; do
         -n|--name)
             CONTAINER_NAME="$2"
             shift 2
+            ;;
+        --standard)
+            FORCE_PATTERNS=true
+            shift
             ;;
         *)
             if [ -z "$PROJECT_PATH" ]; then
@@ -191,9 +200,10 @@ if [ -z "$CONTAINER_NAME" ]; then
     CONTAINER_NAME=$(basename "$ABS_PROJECT_PATH")
 fi
 
-# Check if docker-compose.yml exists in project
-if [ -f "${ABS_PROJECT_PATH}/docker-compose.yml" ]; then
+# Check if docker-compose.yml exists in project and --standard not used
+if [ -f "${ABS_PROJECT_PATH}/docker-compose.yml" ] && [ "$FORCE_PATTERNS" = false ]; then
     print_info "Found docker-compose.yml in project directory"
+    print_warning "Using project's docker-compose.yml (use --standard to bypass)"
     print_status "Starting project with docker-compose..."
     
     cd "$ABS_PROJECT_PATH"
