@@ -1,0 +1,64 @@
+services:
+  # Main development container
+  dev:
+    # Choose your base image tier:
+    # - ds-minimal:latest (core packages only)
+    # - ds-extended:latest (includes visualization, ML, web frameworks)
+    image: ${DS_IMAGE:-ds-extended:latest}
+    
+    container_name: ${PROJECT_NAME:-ds-dev}
+    
+    # Bind mount the current project directory
+    volumes:
+      # Project files - bind mount for live development
+      - .:/workspace/project:rw
+      
+      # Shared library cache volumes (persistent across containers)
+      - ds-conda-cache:/opt/conda/pkgs
+      - ds-pip-cache:/home/developer/.cache/pip
+      - ds-uv-cache:/opt/shared-libs/uv-cache
+      - ds-jupyter-config:/home/developer/.jupyter
+      
+    ports:
+      # Jupyter Lab - localhost only
+      - "127.0.0.1:${JUPYTER_PORT:-8888}:8888"
+      # Streamlit - localhost only
+      - "127.0.0.1:${STREAMLIT_PORT:-8501}:8501"
+      # Additional ports can be exposed as needed
+      
+    environment:
+      # Python settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      # CRITICAL: Add project root to Python path
+      - PYTHONPATH=/workspace/project:/workspace/project/src:$PYTHONPATH
+      
+      # Jupyter settings - no authentication for localhost development
+      - JUPYTER_ENABLE_LAB=yes
+      
+      # Project-specific environment variables
+      - PROJECT_NAME=${PROJECT_NAME:-ds-dev}
+      
+    # Keep container running for interactive development
+    tty: true
+    stdin_open: true
+    
+    # Run as developer user (non-root)
+    user: developer
+    
+    # Working directory inside container
+    working_dir: /workspace/project
+    
+    # Override command if needed
+    command: ${CONTAINER_CMD:-bash}
+
+# Define named volumes for persistent storage
+volumes:
+  ds-conda-cache:
+    name: ds-conda-cache
+  ds-pip-cache:
+    name: ds-pip-cache
+  ds-uv-cache:
+    name: ds-uv-cache
+  ds-jupyter-config:
+    name: ds-jupyter-config

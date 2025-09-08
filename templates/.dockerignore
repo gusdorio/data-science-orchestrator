@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Data files (adjust based on your needs)
+*.csv
+*.xlsx
+*.xls
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.pkl
+*.pickle
+data/
+datasets/
+raw_data/
+
+# Model files
+*.pth
+*.pt
+*.h5
+*.keras
+*.onnx
+models/
+checkpoints/
+
+# Logs
+*.log
+logs/
+runs/
+tensorboard/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+docs/
+*.md
+README.md
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific (uncomment and modify as needed)
+# secrets/
+# .env
+# config/local/

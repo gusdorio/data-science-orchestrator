@@ -1,0 +1,41 @@
+# Project-specific Dockerfile template
+# Extends from one of the base images
+
+# Choose your base tier:
+# FROM ds-minimal:latest  # For projects needing only core packages
+FROM ds-extended:latest   # For projects needing full package set
+
+# Switch to root for installations
+USER root
+
+# Copy project-specific requirements if they exist
+# Uncomment and modify as needed:
+# COPY requirements.txt /tmp/requirements.txt
+# RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+# Or use UV for faster installs:
+# COPY requirements.txt /tmp/requirements.txt
+# RUN uv pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+# Or add conda packages:
+# COPY environment.yml /tmp/project-env.yml
+# RUN conda env update -n ds-minimal -f /tmp/project-env.yml && \
+#     conda clean -afy && \
+#     rm /tmp/project-env.yml
+
+# Create project-specific directories if needed
+# RUN mkdir -p /workspace/data && \
+#     mkdir -p /workspace/models && \
+#     chown -R developer:developer /workspace
+
+# Switch back to developer user
+USER developer
+
+# Set any project-specific environment variables
+# ENV MY_PROJECT_VAR=value
+
+# Expose additional ports if needed
+# EXPOSE 5000
+
+# Default command
+CMD ["bash"]
