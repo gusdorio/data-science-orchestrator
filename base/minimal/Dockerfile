@@ -56,11 +56,19 @@ RUN conda init bash && \
 
 # Create Jupyter configuration for no authentication
 RUN mkdir -p /home/developer/.jupyter && \
-    echo "c.ServerApp.token = ''" > /home/developer/.jupyter/jupyter_server_config.py && \
-    echo "c.ServerApp.password = ''" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "# Jupyter Server 2.x authentication settings" > /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "c.IdentityProvider.token = ''" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "c.IdentityProvider.password = ''" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "# Server configuration" >> /home/developer/.jupyter/jupyter_server_config.py && \
     echo "c.ServerApp.open_browser = False" >> /home/developer/.jupyter/jupyter_server_config.py && \
     echo "c.ServerApp.ip = '0.0.0.0'" >> /home/developer/.jupyter/jupyter_server_config.py && \
-    echo "c.ServerApp.allow_origin = '*'" >> /home/developer/.jupyter/jupyter_server_config.py
+    echo "c.ServerApp.allow_origin = '*'" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "c.ServerApp.disable_check_xsrf = True" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "# Kernel management" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "c.MappingKernelManager.cull_idle_timeout = 3600" >> /home/developer/.jupyter/jupyter_server_config.py && \
+    echo "c.MappingKernelManager.cull_interval = 300" >> /home/developer/.jupyter/jupyter_server_config.py
 
 # Ensure conda environment is available
 ENV CONDA_DEFAULT_ENV=ds-minimal

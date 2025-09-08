@@ -23,6 +23,7 @@ dependencies:
   - requests=2.31.*
   - python-dateutil=2.9.*
   - pytz
+  - httpx=0.25.*
   
   # Excel and data file support
   - openpyxl=3.1.*
