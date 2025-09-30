@@ -13,12 +13,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV for fast Python package management
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code
+# Install UV for fast Python package management (to /usr/local/bin for system-wide access)
+RUN curl -LsSf https://astral.sh/uv/install.sh | env INSTALLER_NO_MODIFY_PATH=1 sh && \
+    mv /root/.cargo/bin/uv /usr/local/bin/uv && \
+    mv /root/.cargo/bin/uvx /usr/local/bin/uvx || true
 
 # Set working directory
 WORKDIR /workspace
@@ -37,7 +35,7 @@ RUN conda init bash
 ENV PATH=/opt/conda/envs/ds-minimal/bin:$PATH
 
 # Install pip-only packages with UV (using the conda environment's Python)
-RUN /root/.cargo/bin/uv pip install --python /opt/conda/envs/ds-minimal/bin/python ucimlrepo
+RUN uv pip install --python /opt/conda/envs/ds-minimal/bin/python ucimlrepo
 
 # Create a non-root user for development
 RUN useradd -ms /bin/bash developer && \
@@ -75,9 +73,6 @@ RUN mkdir -p /home/developer/.jupyter && \
 
 # Ensure conda environment is available
 ENV CONDA_DEFAULT_ENV=ds-minimal
-
-# Ensure Claude Code is accessible to developer user
-ENV PATH="/usr/local/bin:${PATH}"
 
 # Set UV cache directory for faster package installs
 ENV UV_CACHE_DIR=/opt/shared-libs/uv-cache
