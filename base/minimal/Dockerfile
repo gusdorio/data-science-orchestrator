@@ -36,6 +36,9 @@ RUN conda init bash
 # Set the default environment
 ENV PATH=/opt/conda/envs/ds-minimal/bin:$PATH
 
+# Install pip-only packages with UV (using the conda environment's Python)
+RUN /root/.cargo/bin/uv pip install --python /opt/conda/envs/ds-minimal/bin/python ucimlrepo
+
 # Create a non-root user for development
 RUN useradd -ms /bin/bash developer && \
     chown -R developer:developer /workspace
