@@ -4,9 +4,9 @@ Every time we want to test a new algorithm/project, we fall on the problem of se
 
 This project is intended to solve this problem.
 
-You can use this as a script repository side-by-side with your projects and just follow the instructions bellow for automated setup of standard container enviroments for every time you want to execute a project. When you finish a shell section 
+You can use this as a script repository side-by-side with your projects and just follow the instructions bellow for automated setup of standard container enviroments for every time you want to execute a project. When you finish your session, the container is recycled (removed) by standard.
 
-By using this you gain centralized library management, and easy project execution.
+By using this you gain centralized library management, easy project execution, isolation and clean cache controls.
 
 ## Overview
 
@@ -53,12 +53,36 @@ This enviroment was ONLY tested with linux-based enviroments.
 
 ## Quick Start
 
-### 1. Build Base Images
+### 1. Ensure to place it right
+
+First things first: make sure to clone this repository in a directory where you will (or already have) leave your projects together; By this, I mean something like:
+
+```
+home/
+├── data-science-orchestrator/   # Our currently project (you can change the folder name later, I use as 'docker' since is more intuitive in daily basis, for example)
+│   └── .../
+├── my-project/
+│   └── ...
+└── statistics/
+    └── ...
+```
+
+This is crucially if you want to use the scripts/ built to easily workflows. Soon you will realize how much it can save from your time ;-)
+
+### 2. Make the scripts executable
+
+Next to it, make sure the scripts are executable.
+
+```bash
+chmod +x data-science-orchestrator/scripts/*.sh
+```
+
+### 3. Build Base Images
 
 First, build the base images:
 
 ```bash
-cd docker/scripts
+cd data-science-orchestrator/scripts
 
 # Build all base images
 ./build-base.sh all
@@ -68,22 +92,13 @@ cd docker/scripts
 ./build-base.sh extended  # Full package suite
 ```
 
-### 2. Run a Project
+### 4. Run a Project
 
 Run any project with a single command:
 
 ```bash
 # Run with interactive bash
-./run-project.sh graph-theory/graph-coloring-algorithm
-
-# Start Jupyter Lab
-./run-project.sh unsupervised-learning/fuzzy-c-means --jupyter
-
-# Run Streamlit app
-./run-project.sh unsupervised-learning/projetoExtencao012025 --streamlit dashboard.py
-
-# Use extended image for additional services like Streamlit
-./run-project.sh networks/socketsRepositorio --image ds-extended:latest
+./run-project.sh statistics
 ```
 
 ## Image Tiers
@@ -92,18 +107,17 @@ Run any project with a single command:
 
 Perfect for projects that need only core data science tools:
 
-- **Core Libraries**: numpy, pandas, matplotlib, scipy, scikit-learn
+- **Core Libraries**: numpy, pandas, matplotlib, seaborn, scipy, scikit-learn, statsmodels
 - **Jupyter**: JupyterLab, notebook, ipykernel
 - **File Formats**: openpyxl, xlrd, xlsxwriter (Excel support)
-- **Utilities**: requests, python-dateutil, pytz, tabulate
+- **Utilities**: requests, python-dateutil, pytz, tabulate, ucimlrepo
 - **Package Managers**: pip, conda, uv
-- **AI Tools**: Claude Code CLI
 
 ### Tier 2: Extended Base (`ds-extended`)
 
 Includes everything from minimal plus:
 
-- **Visualization**: seaborn, plotly, altair
+- **Visualization**: plotly, altair
 - **Web Frameworks**: streamlit
 - **Graph/Network**: networkx
 - **ML Extensions**: xgboost, lightgbm
@@ -169,6 +183,21 @@ Examples:
 
   # Expose additional ports
   ./run-project.sh my-project --port 5000:5000 --port 8080:8080
+```
+
+The project (folder path) you define will be the root inside the container, working in bind mode. Its useful to keep it in mind for when you want not only to use notebooks, but also to make imports from inside the project (for like when you build your own libraries). 
+
+#### Running a Subfolder as the Project Context
+
+You can pass a subfolder (not just the repository root) to run-project.sh when a project is organized into multiple topics or submodules.
+
+Example:
+```bash
+# Run a nested subfolder
+./run-project.sh graph-theory/graphing_color_algorithm
+
+# Override the container name (default: basename of the path)
+./run-project.sh graph-theory/graphing_color_algorithm --name graph-color-dev
 ```
 
 ## Working with Projects
@@ -241,6 +270,10 @@ docker volume rm ds-conda-cache ds-pip-cache ds-uv-cache ds-jupyter-config
 
 ## Package Management
 
+When you need more management than default image instalation, you can enter on the container to execute the commands (or just execute directly via 'docker exec' guidelines). I will assume to enter, so you repeat yourself less:
+```bash
+sudo docker exec -it -u root <container_name_or_id> bash
+```
 We use two package managers for different purposes:
 
 ### Conda (Primary for Scientific Packages)
@@ -413,7 +446,7 @@ Option 3 - Create project-specific Dockerfile:
 ./run-project.sh my-project
 
 # 2. Inside container, install what you need
-uv pip install jupyter pandas matplotlib seaborn
+uv pip install flask pymongo redisdb
 
 # 3. Develop and test
 
@@ -439,68 +472,7 @@ conda install -c conda-forge transformers datasets
 uv pip install wandb tensorboard
 ```
 
-**Using Claude Code Inside Container:**
-```bash
-# Claude Code is pre-installed in all images
-claude --help
-
-# First time setup - authenticate with your API key
-export ANTHROPIC_API_KEY="your-api-key-here"
-# Or use: claude auth
-
-# Use for code generation
-claude "write a function to process this dataframe"
-
-# Interactive mode
-claude -i
-
-# For persistent auth, add to your project's .env file
-echo "ANTHROPIC_API_KEY=your-key" >> .env
-# Then pass it when running: ./run-project.sh my-project -e ANTHROPIC_API_KEY
-```
-
 ### Adding Dependencies
-
-## Tips and Best Practices
-
-### 1. Choose the Right Base Image
-
-- Use `ds-minimal` for simple analysis projects
-- Use `ds-extended` for ML, visualization, or web apps
-- Create custom images only when necessary
-
-### 2. Jupyter Lab Usage
-
-```bash
-# Start Jupyter Lab
-./run-project.sh my-project --jupyter
-```
-
-### 3. Streamlit Apps
-
-For Streamlit development:
-```bash
-# Run streamlit app
-./run-project.sh my-project --streamlit app.py
-
-# Access at http://localhost:8501
-# Hot-reload is enabled by default
-```
-
-### 4. Development Workflow
-
-1. Edit code on your host machine (VSCode, PyCharm, etc.)
-2. Changes reflect immediately in container (bind mount)
-3. Run/test inside container
-4. Install new packages inside container
-5. Export requirements when done
-
-### 5. Performance Tips
-
-- First run downloads packages (cached for future)
-- Subsequent runs are much faster
-- Use `uv` for faster pip installs
-- Pre-compile Python files in custom images
 
 ## Troubleshooting
 
@@ -569,24 +541,13 @@ Run multiple projects simultaneously:
 ./run-project.sh project2 --name project2-dev --port 8889:8888
 ```
 
-### CI/CD Integration
-
-Use the base images in your CI/CD pipeline:
-```yaml
-# .gitlab-ci.yml
-image: ds-minimal:latest
-test:
-  script:
-    - python -m pytest tests/
-```
-
 ## Contributing
 
 To improve this Docker setup:
 
-1. Add new packages to appropriate tier
+1. Create new tiers, for specific workflows in data science
 2. Test thoroughly with multiple projects
-3. Update documentation
+3. Update documentation if you find errors or something cool to add
 4. Consider backward compatibility
 
 ## Support
