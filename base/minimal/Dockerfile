@@ -37,8 +37,12 @@ ENV PATH=/opt/conda/envs/ds-minimal/bin:$PATH
 # Install pip-only packages with UV (using the conda environment's Python)
 RUN uv pip install --python /opt/conda/envs/ds-minimal/bin/python ucimlrepo
 
-# Create a non-root user for development
-RUN useradd -ms /bin/bash developer && \
+# Create a non-root user for development with matching host UID/GID
+# You MUST pass USER_ID and GROUP_ID as build arguments if those do not match 1000
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g ${GROUP_ID} developer && \
+    useradd -u ${USER_ID} -g ${GROUP_ID} -ms /bin/bash developer && \
     chown -R developer:developer /workspace
 
 # Create directory for shared libraries cache

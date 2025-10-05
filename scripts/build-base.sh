@@ -14,6 +14,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Get host user UID and GID
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}[BUILD]${NC} $1"
@@ -45,6 +49,8 @@ build_image() {
         --tag "${tag}" \
         --cache-from "${tag}" \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --build-arg USER_ID=${HOST_UID} \
+        --build-arg GROUP_ID=${HOST_GID} \
         "${dockerfile_dir}"
     
     if [ $? -eq 0 ]; then
