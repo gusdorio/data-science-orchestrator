@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
     # Node.js and npm for Claude Code
     nodejs \
     npm \
+    pandoc \
+    texlive-xetex \
+    texlive-fonts-recommended \
+    texlive-plain-generic \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
