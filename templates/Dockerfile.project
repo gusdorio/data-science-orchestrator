@@ -1,9 +1,7 @@
 # Project-specific Dockerfile template
-# Extends from one of the base images
+# Extends from the base image
 
-# Choose your base tier:
-# FROM ds-minimal:latest  # For projects needing only core packages
-FROM ds-extended:latest   # For projects needing full package set
+FROM ds-base:latest
 
 # Switch to root for installations
 USER root
@@ -19,7 +17,7 @@ USER root
 
 # Or add conda packages:
 # COPY environment.yml /tmp/project-env.yml
-# RUN conda env update -n ds-minimal -f /tmp/project-env.yml && \
+# RUN conda env update -n ds-env -f /tmp/project-env.yml && \
 #     conda clean -afy && \
 #     rm /tmp/project-env.yml
 

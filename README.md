@@ -10,39 +10,36 @@ By using this you gain centralized library management, easy project execution, i
 
 ## Overview
 
-This Docker setup provides a flexible and efficient way to run data science projects in containers. It uses a tiered approach with two base images:
+This Docker setup provides a flexible and efficient way to run data science projects in containers. It uses a **unified base image** approach:
 
-1. **Minimal Base (`ds-minimal`)**: Core data science packages only
-2. **Extended Base (`ds-extended`)**: Full suite including visualization, ML, and web frameworks
+- **Unified Base (`ds-base`)**: Comprehensive data science environment with visualization, web frameworks, and PDF export support
 
-For library specs, take a look on the images in template folders.
+For project-specific dependencies (databases, ML libraries, NLP, etc.), create a project-specific docker-compose.yml and Dockerfile.
 
 ### Key Features
 
-- **Tiered Base Images**: Choose between minimal and extended environments
+- **Single Comprehensive Image**: One well-designed base with everything you need
 - **Centralized Library Cache**: Shared volumes for conda, pip, and uv packages
 - **Easy Project Execution**: Simple scripts to run any project
 - **Bind Mount Development**: Live code editing with bind mounts
 - **Multiple Package Managers**: Conda for core packages, UV for fast pip installs
 - **Project Isolation**: Each project runs in its own container
 - **Efficient Storage**: Shared library cache reduces disk usage
+- **PDF Export**: Built-in pandoc and texlive for Jupyter PDF export
 
 ## Directory Structure
 
 ```
 docker/
 ├── base/
-│   ├── minimal/
-│   │   ├── Dockerfile      # Core packages only
-│   │   └── environment.yml
-│   └── extended/
-│       ├── Dockerfile      # Full package suite
+│   └── unified/
+│       ├── Dockerfile      # Comprehensive package suite
 │       └── environment.yml
 ├── templates/
 │   ├── docker-compose.yml  # Template for projects
 │   └── Dockerfile.project  # Template for custom images
 ├── scripts/
-│   ├── build-base.sh      # Build base images
+│   ├── build-base.sh      # Build base image
 │   └── run-project.sh     # Run projects
 └── README.md              # This file
 ```
@@ -77,19 +74,15 @@ Next to it, make sure the scripts are executable.
 chmod +x data-science-orchestrator/scripts/*.sh
 ```
 
-### 3. Build Base Images
+### 3. Build Base Image
 
-First, build the base images:
+Build the base image:
 
 ```bash
 cd data-science-orchestrator/scripts
 
-# Build all base images
-./build-base.sh all
-
-# Or build specific tier
-./build-base.sh minimal   # Just core packages
-./build-base.sh extended  # Full package suite
+# Build the unified base image
+./build-base.sh
 ```
 
 ### 4. Run a Project
@@ -101,45 +94,70 @@ Run any project with a single command:
 ./run-project.sh statistics
 ```
 
-## Image Tiers
+## Base Image
 
-### Tier 1: Minimal Base (`ds-minimal`)
+### Unified Base (`ds-base`)
 
-Perfect for projects that need only core data science tools:
+A comprehensive data science environment that includes:
 
-- **Core Libraries**: numpy, pandas, matplotlib, seaborn, scipy, scikit-learn, statsmodels
-- **Jupyter**: JupyterLab, notebook, ipykernel
-- **File Formats**: openpyxl, xlrd, xlsxwriter (Excel support)
-- **Utilities**: requests, python-dateutil, pytz, tabulate, ucimlrepo
-- **Package Managers**: pip, conda, uv
+**Core Data Science:**
+- numpy, pandas, matplotlib, seaborn, scipy, scikit-learn, statsmodels
 
-### Tier 2: Extended Base (`ds-extended`)
+**Time Series:**
+- pmdarima, prophet
 
-Includes everything from minimal plus:
+**Visualization:**
+- plotly, altair
 
-- **Visualization**: plotly, altair
-- **Web Frameworks**: streamlit
-- **Graph/Network**: networkx
-- **ML Extensions**: xgboost, lightgbm
-- **NLP**: nltk, spacy
-- **Time Series**: prophet
-- **Databases**: sqlalchemy, pymongo, redis-py
-- **Development**: black, pylint
-- **Performance**: numba, cython
+**Web Frameworks:**
+- streamlit
+
+**Graph/Network:**
+- networkx
+
+**Jupyter:**
+- JupyterLab, notebook, ipykernel
+
+**File Formats:**
+- openpyxl, xlrd, xlsxwriter, h5py (Excel and HDF5 support)
+
+**SQL:**
+- sqlalchemy
+
+**Development Tools:**
+- black, ipython, pip, conda, uv
+
+**PDF Export:**
+- pandoc, texlive (for Jupyter PDF export)
+
+**Utilities:**
+- requests, python-dateutil, pytz, tabulate, httpx, psutil, pillow, sympy
+
+### Project-Specific Dependencies
+
+For specialized needs (databases, ML libraries, NLP, etc.), extend the base image with a project-specific Dockerfile:
+
+```dockerfile
+FROM ds-base:latest
+USER root
+RUN uv pip install --python /opt/conda/envs/ds-env/bin/python \
+    xgboost \
+    pymongo \
+    spacy
+USER developer
+```
 
 ## Script Usage
 
 ### build-base.sh
 
-Builds the Docker base images with optimized caching.
+Builds the Docker base image with optimized caching.
 
 ```bash
-Usage: ./build-base.sh [minimal|extended|all]
+Usage: ./build-base.sh
 
-Examples:
-  ./build-base.sh all        # Build both tiers
-  ./build-base.sh minimal    # Build only minimal
-  ./build-base.sh extended   # Build only extended
+Example:
+  ./build-base.sh        # Build the unified base image
 ```
 
 Features:
@@ -156,7 +174,7 @@ Runs a project in a Docker container with proper mounts and configuration.
 Usage: ./run-project.sh <project-path> [options]
 
 Options:
-  -i, --image     Docker image to use (default: ds-minimal:latest)
+  -i, --image     Docker image to use (default: ds-base:latest)
   -c, --command   Command to run in container (default: bash)
   -j, --jupyter   Start Jupyter Lab instead of bash
   -s, --streamlit Run streamlit app (requires app file path)
@@ -174,9 +192,6 @@ Examples:
 
   # Run Streamlit app
   ./run-project.sh my-project --streamlit app.py
-
-  # Use extended image for additional services
-  ./run-project.sh my-project --image ds-extended:latest
 
   # Custom command
   ./run-project.sh my-project --command "python train.py"
@@ -365,10 +380,10 @@ uv pip install conflicting-package --force-reinstall
 
 #### 3. Saving Dependencies
 
-**For Base Images (Permanent):**
+**For Base Image (Permanent):**
 ```bash
-# Add to environment.yml files in base/minimal or base/extended
-# Then rebuild: ./scripts/build-base.sh all
+# Add to environment.yml file in base/unified
+# Then rebuild: ./scripts/build-base.sh
 ```
 
 **For Projects (Temporary):**
@@ -416,9 +431,9 @@ conda install matplotlib
 
 Option 1 - Add to base image (for commonly used packages):
 ```bash
-# Edit base/extended/environment.yml
+# Edit base/unified/environment.yml
 # Add: - requests
-# Then rebuild: ./scripts/build-base.sh extended
+# Then rebuild: ./scripts/build-base.sh
 ```
 
 Option 2 - Use requirements.txt workflow:
@@ -520,14 +535,48 @@ docker volume prune
 
 ## Advanced Usage
 
-### Custom Base Images
+### Custom Project Images
 
-Create specialized base images for specific domains:
+Create specialized images for specific projects:
 
 ```dockerfile
-# bioinformatics-base
-FROM ds-extended:latest
-RUN conda install -c bioconda biopython samtools
+# my-project/Dockerfile
+FROM ds-base:latest
+USER root
+
+# Add project-specific dependencies
+RUN uv pip install --python /opt/conda/envs/ds-env/bin/python \
+    xgboost \
+    lightgbm \
+    pymongo
+
+USER developer
+```
+
+### Project with External Services
+
+For projects needing databases or other services:
+
+```yaml
+# my-project/docker-compose.yml
+services:
+  dev:
+    build: .
+    volumes:
+      - .:/workspace/project
+    ports:
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      - mongodb
+      
+  mongodb:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
 ```
 
 ### Multi-Project Development
@@ -545,7 +594,7 @@ Run multiple projects simultaneously:
 
 To improve this Docker setup:
 
-1. Create new tiers, for specific workflows in data science
+1. Add useful packages to the unified base image
 2. Test thoroughly with multiple projects
 3. Update documentation if you find errors or something cool to add
 4. Consider backward compatibility

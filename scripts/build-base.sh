@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Build script for data science base images
-# Usage: ./build-base.sh [minimal|extended|all]
+# Build script for data science base image
+# Usage: ./build-base.sh
 
 set -e
 
@@ -31,11 +31,10 @@ print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-# Function to build an image
+# Function to build the image
 build_image() {
-    local tier=$1
-    local tag=$2
-    local dockerfile_dir="${BASE_DIR}/base/${tier}"
+    local dockerfile_dir="${BASE_DIR}/base/unified"
+    local tag="ds-base:latest"
     
     if [ ! -f "${dockerfile_dir}/Dockerfile" ]; then
         print_error "Dockerfile not found at ${dockerfile_dir}/Dockerfile"
@@ -61,38 +60,37 @@ build_image() {
     fi
 }
 
-# Parse command line arguments
-TIER=${1:-all}
+# Show usage if help flag
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+    cat << EOF
+Usage: $0
 
-case $TIER in
-    minimal)
-        print_status "Building minimal base image..."
-        build_image "minimal" "ds-minimal:latest"
-        ;;
-    extended)
-        print_status "Building extended base image..."
-        # First ensure minimal is built
-        if ! docker image inspect ds-minimal:latest &> /dev/null; then
-            print_warning "Minimal image not found, building it first..."
-            build_image "minimal" "ds-minimal:latest"
-        fi
-        build_image "extended" "ds-extended:latest"
-        ;;
-    all)
-        print_status "Building all base images..."
-        build_image "minimal" "ds-minimal:latest"
-        build_image "extended" "ds-extended:latest"
-        ;;
-    *)
-        print_error "Unknown tier: $TIER"
-        echo "Usage: $0 [minimal|extended|all]"
-        exit 1
-        ;;
-esac
+Build the unified data science base image (ds-base:latest).
+
+This script builds a single comprehensive image that includes:
+- Core data science: numpy, pandas, matplotlib, scipy, scikit-learn, seaborn
+- Time series: pmdarima, prophet
+- Visualization: plotly, altair
+- Web/Dashboard: streamlit
+- Graph/Network: networkx
+- SQL support: sqlalchemy
+- Jupyter ecosystem: jupyterlab, notebook
+- Development tools: black, ipython
+- PDF export: pandoc, texlive
+
+For project-specific dependencies (databases, ML libraries, NLP, etc.),
+create a project-specific docker-compose.yml and Dockerfile.
+
+EOF
+    exit 0
+fi
+
+print_status "Building data science base image..."
+build_image
 
 # Show built images
-print_status "Available base images:"
-docker images | grep -E "^ds-(minimal|extended)" || true
+print_status "Available base image:"
+docker images | grep -E "^ds-base" || true
 
 # Create volumes if they don't exist
 print_status "Creating shared volumes..."
@@ -102,3 +100,8 @@ docker volume create ds-uv-cache &> /dev/null || true
 docker volume create ds-jupyter-config &> /dev/null || true
 
 print_status "Build complete!"
+print_status ""
+print_status "Next steps:"
+print_status "  Run a project:  ./run-project.sh <project-path>"
+print_status "  Start Jupyter:  ./run-project.sh <project-path> --jupyter"
+print_status "  Run Streamlit:  ./run-project.sh <project-path> --streamlit app.py"

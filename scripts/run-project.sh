@@ -75,7 +75,7 @@ Arguments:
     project-path    Path to the project directory (relative to puc/ or absolute)
 
 Options:
-    -i, --image     Docker image to use (default: ds-minimal:latest)
+    -i, --image     Docker image to use (default: ds-base:latest)
     -c, --command   Command to run in container (default: bash)
     -j, --jupyter   Start Jupyter Lab instead of bash
     -s, --streamlit Run streamlit app (requires app file path after flag)
@@ -95,9 +95,6 @@ Examples:
     # Run streamlit app
     $0 unsupervised-learning/projetoExtencao012025 --streamlit dashboard.py
 
-    # Use extended image for additional services
-    $0 networks/socketsRepositorio --image ds-extended:latest
-
     # Run with custom command
     $0 big-data --command "python main.py"
 
@@ -111,7 +108,7 @@ EOF
 
 # Parse arguments
 PROJECT_PATH=""
-IMAGE="ds-minimal:latest"
+IMAGE="ds-base:latest"
 COMMAND="bash"
 EXTRA_PORTS=""
 EXTRA_ENV=""
@@ -224,11 +221,13 @@ else
         exit 1
     fi
     
-    # Smart port allocation - Jupyter always available, other services only on extended
+    # Smart port allocation
     JUPYTER_HOST_PORT=8888
     JUPYTER_CONTAINER_PORT=8888
+    STREAMLIT_HOST_PORT=8501
+    STREAMLIT_CONTAINER_PORT=8501
     
-    # Check and allocate Jupyter port (available in both minimal and extended)
+    # Check and allocate Jupyter port
     if [[ "$COMMAND" == *"jupyter"* ]]; then
         JUPYTER_HOST_PORT=$(find_available_port 8888)
         if [ $JUPYTER_HOST_PORT -ne 8888 ]; then
@@ -244,32 +243,23 @@ else
         fi
     fi
     
-    # Extended image services (Streamlit, etc.) - only if using extended image
-    if [[ "$IMAGE" == *"extended"* ]]; then
-        STREAMLIT_HOST_PORT=8501
-        STREAMLIT_CONTAINER_PORT=8501
-        
-        if [[ "$COMMAND" == *"streamlit"* ]]; then
-            STREAMLIT_HOST_PORT=$(find_available_port 8501)
-            if [ $STREAMLIT_HOST_PORT -ne 8501 ]; then
-                print_warning "Port 8501 in use, using port $STREAMLIT_HOST_PORT for Streamlit"
-                # Update the streamlit command with the new port
-                COMMAND="${COMMAND/--server.port=8501/--server.port=$STREAMLIT_CONTAINER_PORT}"
-            fi
-        else
-            # For bash or other commands on extended image, check streamlit port
-            STREAMLIT_HOST_PORT=$(find_available_port 8501)
-            if [ $STREAMLIT_HOST_PORT -ne 8501 ]; then
-                print_info "Using alternate port for Streamlit: $STREAMLIT_HOST_PORT"
-            fi
+    # Check and allocate Streamlit port
+    if [[ "$COMMAND" == *"streamlit"* ]]; then
+        STREAMLIT_HOST_PORT=$(find_available_port 8501)
+        if [ $STREAMLIT_HOST_PORT -ne 8501 ]; then
+            print_warning "Port 8501 in use, using port $STREAMLIT_HOST_PORT for Streamlit"
+            # Update the streamlit command with the new port
+            COMMAND="${COMMAND/--server.port=8501/--server.port=$STREAMLIT_CONTAINER_PORT}"
         fi
-        
-        EXTRA_SERVICE_PORTS="-p 127.0.0.1:${STREAMLIT_HOST_PORT}:${STREAMLIT_CONTAINER_PORT}"
     else
-        # Minimal image - no additional service ports
-        STREAMLIT_HOST_PORT=""
-        EXTRA_SERVICE_PORTS=""
+        # For bash or other commands, check streamlit port
+        STREAMLIT_HOST_PORT=$(find_available_port 8501)
+        if [ $STREAMLIT_HOST_PORT -ne 8501 ]; then
+            print_info "Using alternate port for Streamlit: $STREAMLIT_HOST_PORT"
+        fi
     fi
+    
+    EXTRA_SERVICE_PORTS="-p 127.0.0.1:${STREAMLIT_HOST_PORT}:${STREAMLIT_CONTAINER_PORT}"
     
     # Prepare docker run command
     DOCKER_CMD="docker run -it --rm"
@@ -297,28 +287,15 @@ else
     print_info "Image: $IMAGE"
     print_info "Command: $COMMAND"
     print_info "Jupyter port: $JUPYTER_HOST_PORT"
-    
-    # Show additional ports only for extended image
-    if [[ "$IMAGE" == *"extended"* ]] && [ -n "$STREAMLIT_HOST_PORT" ]; then
-        print_info "Streamlit port: $STREAMLIT_HOST_PORT"
-    fi
+    print_info "Streamlit port: $STREAMLIT_HOST_PORT"
     
     # Show access information
     if [[ "$COMMAND" == *"jupyter"* ]]; then
         print_status "Jupyter Lab will be available at: http://localhost:$JUPYTER_HOST_PORT/lab"
     elif [[ "$COMMAND" == *"streamlit"* ]]; then
-        if [[ "$IMAGE" == *"extended"* ]]; then
-            print_status "Streamlit app will be available at: http://localhost:$STREAMLIT_HOST_PORT"
-        else
-            print_warning "Streamlit requires ds-extended image. Current image: $IMAGE"
-        fi
+        print_status "Streamlit app will be available at: http://localhost:$STREAMLIT_HOST_PORT"
     else
-        # Show available services based on image type
-        if [[ "$IMAGE" == *"extended"* ]]; then
-            print_status "Services available at: Jupyter http://localhost:$JUPYTER_HOST_PORT/lab | Streamlit http://localhost:$STREAMLIT_HOST_PORT"
-        else
-            print_status "Services available at: Jupyter http://localhost:$JUPYTER_HOST_PORT/lab"
-        fi
+        print_status "Services available at: Jupyter http://localhost:$JUPYTER_HOST_PORT/lab | Streamlit http://localhost:$STREAMLIT_HOST_PORT"
     fi
     
     # Execute

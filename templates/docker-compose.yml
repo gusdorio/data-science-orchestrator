@@ -1,10 +1,8 @@
 services:
   # Main development container
   dev:
-    # Choose your base image tier:
-    # - ds-minimal:latest (core packages only)
-    # - ds-extended:latest (includes visualization, ML, web frameworks)
-    image: ${DS_IMAGE:-ds-extended:latest}
+    # Base image with all data science packages
+    image: ${DS_IMAGE:-ds-base:latest}
     
     container_name: ${PROJECT_NAME:-ds-dev}
     
